@@ -21,8 +21,8 @@ import io.strimzi.kafka.bridge.metrics.JmxMetricsCollector;
 import io.strimzi.kafka.bridge.metrics.MetricsCollector;
 import io.strimzi.kafka.bridge.metrics.MetricsType;
 import io.strimzi.kafka.bridge.metrics.StrimziMetricsCollector;
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Promise;
+import io.vertx.core.Future;
+import io.vertx.core.VerticleBase;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpMethod;
@@ -76,7 +76,7 @@ import static io.netty.handler.codec.http.HttpHeaderNames.ORIGIN;
  * Main bridge class listening for connections and handling HTTP requests.
  */
 @SuppressWarnings({"checkstyle:MemberName", "checkstyle:ClassDataAbstractionCoupling", "checkstyle:ClassFanOutComplexity"})
-public class HttpBridge extends AbstractVerticle {
+public class HttpBridge extends VerticleBase {
     private static final Logger LOGGER = LogManager.getLogger(HttpBridge.class);
 
     private final BridgeConfig bridgeConfig;
@@ -147,10 +147,10 @@ public class HttpBridge extends AbstractVerticle {
         }
     }
 
-    private void bindHttpServer(Promise<Void> startPromise) {
+    private Future<HttpServer> bindHttpServer() {
         HttpServerOptions httpServerOptions = httpServerOptions();
 
-        this.vertx.createHttpServer(httpServerOptions)
+        return this.vertx.createHttpServer(httpServerOptions)
                 .connectionHandler(this::processConnection)
                 .requestHandler(this.router)
                 .listen()
@@ -167,11 +167,9 @@ public class HttpBridge extends AbstractVerticle {
 
                     this.isReady = true;
                     this.httpServer = httpServer;
-                    startPromise.complete();
                 })
                 .onFailure(t -> {
                     LOGGER.error("Error starting HTTP-Kafka Bridge", t);
-                    startPromise.fail(t);
                 });
     }
 
@@ -196,8 +194,9 @@ public class HttpBridge extends AbstractVerticle {
     }
 
     @Override
-    public void start(Promise<Void> startPromise) {
-        OpenAPIContract.from(vertx, "openapi.json")
+    public Future<?> start() {
+
+        return OpenAPIContract.from(vertx, "openapi.json")
                 .onSuccess(contract -> {
                     RouterBuilder routerBuilder = RouterBuilder.create(vertx, contract);
                     routerBuilder.getRoute(this.SEND.getOperationId().toString()).addHandler(this.SEND);
@@ -248,11 +247,10 @@ public class HttpBridge extends AbstractVerticle {
                     HttpAdminBridgeEndpoint adminClientEndpoint = new HttpAdminBridgeEndpoint(this.bridgeConfig, this.httpBridgeContext);
                     this.httpBridgeContext.setHttpAdminEndpoint(adminClientEndpoint);
                     adminClientEndpoint.open();
-                    this.bindHttpServer(startPromise);
-                })
+
+                }).compose(openapiContract -> this.bindHttpServer())
                 .onFailure(t -> {
                     LOGGER.error("Failed to create OpenAPI router factory");
-                    startPromise.fail(t);
                 });
     }
 
@@ -287,7 +285,7 @@ public class HttpBridge extends AbstractVerticle {
     }
 
     @Override
-    public void stop(Promise<Void> stopPromise) {
+    public Future<?> stop() {
         LOGGER.info("Stopping HTTP-Kafka bridge verticle ...");
 
         this.isReady = false;
@@ -305,16 +303,15 @@ public class HttpBridge extends AbstractVerticle {
 
         if (this.httpServer != null) {
 
-            this.httpServer.close()
+            return this.httpServer.shutdown()
                     .onSuccess(v -> {
                         LOGGER.info("HTTP-Kafka bridge has been shut down successfully");
-                        stopPromise.complete();
                     })
                     .onFailure(t -> {
                         LOGGER.info("Error while shutting down HTTP-Kafka bridge", t);
-                        stopPromise.fail(t);
                     });
         }
+        return Future.succeededFuture();
     }
 
     private HttpServerOptions httpServerOptions() {

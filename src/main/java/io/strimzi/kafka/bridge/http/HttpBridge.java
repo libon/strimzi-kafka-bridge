@@ -688,7 +688,12 @@ public class HttpBridge extends VerticleBase {
     }
 
     private void processConnection(HttpConnection httpConnection) {
-        httpConnection.shutdownHandler(close -> closeConnectionEndpoint(httpConnection));
+        httpConnection.closeHandler(close -> {
+            LOGGER.info("Connection is closed");
+            closeConnectionEndpoint(httpConnection);
+        }).shutdownHandler(v -> {
+            LOGGER.info("Connection is shutting down");
+        });
     }
 
     /**

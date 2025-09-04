@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Apache Kafka bridge main application class
@@ -85,11 +86,11 @@ public class Application {
 
                         try {
                             LOGGER.info("<main> graceful shutdown begins");
-                            vertx.undeploy(deploymentId).await();
-                            LOGGER.info("<main> graceful shutdown ended");
+                            vertx.undeploy(deploymentId).await(10, TimeUnit.SECONDS);
+                            System.out.println("<main> graceful shutdown ended");
 
                         } catch (Exception e) {
-                            LOGGER.error("<main> graceful shutdown error", e);
+                            System.out.println("<main> graceful shutdown error");
                         }
 
                     }));

@@ -287,7 +287,7 @@ public class HttpBridge extends VerticleBase {
 
     @Override
     public Future<?> stop() {
-        LOGGER.info("Stopping HTTP-Kafka bridge verticle ...");
+        System.out.println("Stopping HTTP-Kafka bridge verticle ...");
 
         this.isReady = false;
 
@@ -306,10 +306,10 @@ public class HttpBridge extends VerticleBase {
 
             return this.httpServer.shutdown()
                     .onSuccess(v -> {
-                        LOGGER.info("HTTP-Kafka bridge has been shut down successfully");
+                        System.out.println("HTTP-Kafka bridge has been shut down successfully");
                     })
                     .onFailure(t -> {
-                        LOGGER.info("Error while shutting down HTTP-Kafka bridge", t);
+                        System.out.println("Error while shutting down HTTP-Kafka bridge");
                     });
         }
         return Future.succeededFuture();

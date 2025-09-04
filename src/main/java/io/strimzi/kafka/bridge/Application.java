@@ -85,7 +85,7 @@ public class Application {
 
                         try {
                             LOGGER.info("<main> graceful shutdown begins");
-                            vertx.close().await();
+                            vertx.undeploy(deploymentId).await();
                             LOGGER.info("<main> graceful shutdown ended");
 
                         } catch (Exception e) {

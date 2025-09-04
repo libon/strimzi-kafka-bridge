@@ -167,6 +167,7 @@ public class HttpBridge extends VerticleBase {
 
                     this.isReady = true;
                     this.httpServer = httpServer;
+
                 })
                 .onFailure(t -> {
                     LOGGER.error("Error starting HTTP-Kafka Bridge", t);
@@ -291,15 +292,15 @@ public class HttpBridge extends VerticleBase {
         this.isReady = false;
 
         // Consumers cleanup
-        this.httpBridgeContext.closeAllHttpSinkBridgeEndpoints();
+        //this.httpBridgeContext.closeAllHttpSinkBridgeEndpoints();
 
         // producer cleanup
         // for each connection, we have to close the connection itself but before that
         // all the sink/source endpoints (so the related links inside each of them)
-        this.httpBridgeContext.closeAllHttpSourceBridgeEndpoints();
+        //this.httpBridgeContext.closeAllHttpSourceBridgeEndpoints();
 
         // admin client cleanup
-        this.httpBridgeContext.closeHttpAdminClientEndpoint();
+        //this.httpBridgeContext.closeHttpAdminClientEndpoint();
 
         if (this.httpServer != null) {
 

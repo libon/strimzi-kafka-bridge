@@ -81,6 +81,18 @@ public class Application {
         vertx.deployVerticle(httpBridge)
                 .onSuccess(deploymentId -> {
                     LOGGER.info("HTTP verticle instance deployed [{}]", deploymentId);
+                    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+
+                        try {
+                            LOGGER.info("<main> graceful shutdown begins");
+                            vertx.close().await();
+                            LOGGER.info("<main> graceful shutdown ended");
+
+                        } catch (Exception e) {
+                            LOGGER.error("<main> graceful shutdown error", e);
+                        }
+
+                    }));
                     httpPromise.complete(httpBridge);
                 })
                 .onFailure(t -> {
